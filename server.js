@@ -26,13 +26,13 @@ function broadcast(obj, except) {
   for (const [id, c] of clients) if (c.ws.readyState === WebSocket.OPEN && id !== except) c.ws.send(data);
 }
 function playerList() {
-  return [...clients.values()].map(c => ({id:c.id,name:c.name,color:c.color,skin:c.skin,styleIndex:c.styleIndex,appearance:c.appearance,x:c.x||0,y:c.y||0,z:c.z||0,ry:c.ry||0,vehicle:c.vehicle||null}));
+  return [...clients.values()].map(c => ({id:c.id,name:c.name,color:c.color,x:c.x||0,y:c.y||0,z:c.z||0,ry:c.ry||0,vehicle:c.vehicle||null}));
 }
 function sendPlayers() { broadcast({type:'players', players: playerList()}); }
 
 wss.on('connection', ws => {
   const id = String(nextId++);
-  const client = {ws,id,name:'Player',color:0x245cff,skin:0xf1b58b,styleIndex:0,appearance:null,x:0,y:0,z:0,ry:0,vehicle:null};
+  const client = {ws,id,name:'Player',color:0x245cff,x:0,y:0,z:0,ry:0,vehicle:null};
   clients.set(id, client);
   ws.send(JSON.stringify({type:'welcome',id}));
 
@@ -41,9 +41,6 @@ wss.on('connection', ws => {
     if (m.type === 'join') {
       client.name = String(m.name || 'Player').slice(0,24);
       client.color = Number(m.color) || 0x245cff;
-      client.skin = Number(m.skin) || 0xf1b58b;
-      client.styleIndex = Number.isInteger(Number(m.styleIndex)) ? Number(m.styleIndex) : 0;
-      client.appearance = (m.appearance && typeof m.appearance === 'object') ? m.appearance : null;
       sendPlayers();
     } else if (m.type === 'state') {
       for (const k of ['x','y','z','ry']) if (Number.isFinite(Number(m[k]))) client[k] = Number(m[k]);
