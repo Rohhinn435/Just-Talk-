@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Just Talk — Kerala Open World</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#101820;font-family:Arial,sans-serif;touch-action:none}
+#game{width:100vw;height:100vh;display:block}
+#hud,#mission,#vehicle,#notice,#controls{position:fixed;z-index:5;color:#fff;text-shadow:0 1px 2px #000}
+#hud{top:10px;left:10px;background:#0009;padding:9px 12px;border-radius:13px;line-height:1.45}
+#mission{top:10px;right:10px;background:#07583dcc;padding:9px 12px;border-radius:13px;text-align:right;max-width:260px}
+#vehicle{bottom:70px;left:50%;transform:translateX(-50%);background:#0009;padding:7px 12px;border-radius:10px}
+#notice{left:50%;top:76px;transform:translateX(-50%);background:#000b;padding:9px 15px;border-radius:12px;display:none}
+#controls{bottom:14px;left:14px;right:14px;display:flex;align-items:flex-end;justify-content:space-between;pointer-events:none;z-index:20}
+#stick{width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffff2b,#07151dcc 70%);border:2px solid #ffffff55;box-shadow:0 8px 24px #0008,inset 0 0 20px #0008;pointer-events:auto;position:relative;backdrop-filter:blur(6px)}
+#stick:before{content:"";position:absolute;inset:12px;border:1px solid #ffffff25;border-radius:50%}
+#knob{position:absolute;width:58px;height:58px;border-radius:50%;background:linear-gradient(145deg,#ffffffee,#aebbc8cc);border:2px solid #fff;box-shadow:0 6px 14px #0009,inset 0 2px 4px #fff;left:35px;top:35px;transition:transform .05s linear}
+.btns{display:grid;grid-template-columns:repeat(2,86px);gap:12px;pointer-events:auto;filter:drop-shadow(0 8px 14px #0009)}
+.btn{width:86px;height:86px;border:2px solid #ffffff55;border-radius:50%;color:#fff;font-weight:900;font-size:11px;letter-spacing:.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:inset 0 2px 7px #ffffff22,inset 0 -8px 15px #0007,0 5px 0 #0008;transition:transform .08s,filter .08s,box-shadow .08s;-webkit-tap-highlight-color:transparent;touch-action:none;backdrop-filter:blur(7px)}
+.btn .icon{font-size:27px;line-height:1;filter:drop-shadow(0 2px 2px #0008)}
+.btn span:last-child{font-size:10px}
+.btn:active{transform:translateY(4px) scale(.94);filter:brightness(1.35);box-shadow:inset 0 4px 9px #0009,0 1px 0 #0008}
+.action-enter{border-color:#25d9ffff;background:radial-gradient(circle at 35% 25%,#16bde0ee,#06455eef 72%)}
+.action-boost{border-color:#ffd34fff;background:radial-gradient(circle at 35% 25%,#ffc928ee,#6b3505ef 72%)}
+.action-jump{border-color:#e45dffff;background:radial-gradient(circle at 35% 25%,#cf35e9ee,#4d075bef 72%)}
+.action-cam{border-color:#36e5d5ff;background:radial-gradient(circle at 35% 25%,#16cbbcee,#07534bef 72%)}
+@media(max-width:520px){#controls{left:10px;right:10px;bottom:10px}#stick{width:116px;height:116px}#knob{width:52px;height:52px;left:30px;top:30px}.btns{grid-template-columns:repeat(2,70px);gap:9px}.btn{width:70px;height:70px;border-radius:50%}.btn .icon{font-size:23px}}
+#start{position:fixed;inset:0;background:radial-gradient(circle at 50% 38%,#16b8a044 0,#061c24cc 38%,#02070cf5 100%),linear-gradient(135deg,#031c20cc,#07131eea),url("https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=1800&q=85") center/cover;display:flex;align-items:center;justify-content:center;z-index:100;color:white;text-align:center;overflow:hidden}
+#start:before{content:"";position:absolute;inset:-20%;background:radial-gradient(circle at 20% 20%,#27e6c522 0 2px,transparent 3px),radial-gradient(circle at 80% 70%,#ffffff18 0 1px,transparent 2px);background-size:90px 90px,70px 70px;animation:startParticles 18s linear infinite;pointer-events:none}
+@keyframes startParticles{to{transform:translate3d(45px,-35px,0)}}
+.start-wrap{position:relative;width:min(92vw,680px);padding:3px;border-radius:32px;background:linear-gradient(135deg,#ffffff55,#21d9c455,#ffb52a55);box-shadow:0 30px 100px #000b,0 0 70px #12c8bb33}
+.card{position:relative;background:linear-gradient(145deg,#06151ee8,#071b22e8 55%,#021016ee);padding:42px 34px 32px;border:1px solid #ffffff2e;border-radius:29px;max-width:680px;backdrop-filter:blur(18px);overflow:hidden}
+.card:after{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-130px;top:-150px;background:#18d7c322;filter:blur(4px)}
+.brand{font-size:12px;letter-spacing:4px;color:#75f5e7;font-weight:900;margin-bottom:13px;text-transform:uppercase}
+.card h1{margin:0;font-size:clamp(42px,9vw,78px);line-height:.95;letter-spacing:-3px;background:linear-gradient(90deg,#fff,#9ff8ef,#ffd36a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 12px 35px #0008}
+.subtitle{margin:18px auto 8px;max-width:530px;font-size:16px;line-height:1.55;color:#d8f5f3}
+.features{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:22px 0 28px}.feature{padding:8px 12px;border:1px solid #ffffff20;border-radius:999px;background:#ffffff0c;font-size:11px;color:#d5e9e9}
+button.start{position:relative;min-width:250px;background:linear-gradient(135deg,#ffd45a,#ff9e00);color:#101820;border:0;border-radius:16px;padding:16px 28px;font-weight:1000;font-size:17px;letter-spacing:1px;box-shadow:0 10px 0 #8b4f00,0 18px 35px #ffb30044;cursor:pointer;transition:.15s}
+button.start:hover{transform:translateY(-2px);filter:brightness(1.08)}button.start:active{transform:translateY(7px);box-shadow:0 3px 0 #8b4f00,0 8px 20px #ffb30033}
+.creator{margin-top:25px;color:#91aeb2;font-size:10px;letter-spacing:2px;text-transform:uppercase}.creator b{color:#fff;font-size:12px}
+@media(max-width:520px){.card{padding:32px 18px 25px;border-radius:25px}.card h1{letter-spacing:-2px}.subtitle{font-size:14px}.features{margin:18px 0 24px}button.start{width:100%;min-width:0}}
+small{opacity:.8}
+
+#multiplayer{position:fixed;left:10px;top:165px;z-index:8;width:230px;background:#07151ddd;color:#fff;padding:10px 11px;border:1px solid #ffffff33;border-radius:14px;box-shadow:0 8px 25px #0007;backdrop-filter:blur(7px)}
+#multiplayer .mp-title{font-weight:900;font-size:12px;margin-bottom:5px}
+#mpStatus{font-size:11px;color:#8ff0ba;margin-bottom:7px}
+.mp-row{display:flex;gap:6px;margin:6px 0}
+#playerCount{font-size:11px;margin:4px 0 6px;color:#d9f7ff}
+#multiplayer small{font-size:9px;opacity:.75}
+.mp-player-label{font:bold 11px Arial;color:#fff;text-shadow:0 1px 3px #000}
+@media(max-width:520px){#multiplayer{top:150px;left:8px;width:210px}}
+
+#chatPanel{position:fixed;right:14px;top:145px;z-index:8;width:285px;background:linear-gradient(145deg,#071b2af2,#07101cee);color:#fff;padding:13px;border:1px solid #ffffff35;border-radius:20px;box-shadow:0 14px 45px #0009,0 0 25px #18cde722;backdrop-filter:blur(14px);overflow:hidden}
+#chatPanel:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,#28d7ff12,transparent 45%,#9b5cff10);pointer-events:none}
+#chatTitle{font-weight:1000;font-size:13px;letter-spacing:1.2px;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+#chatTitle:before{content:"💬";width:32px;height:32px;display:grid;place-items:center;border-radius:11px;background:linear-gradient(145deg,#24d7ff,#08729d);box-shadow:0 5px 16px #00d9ff55;font-size:18px}
+#chatMessages{height:130px;overflow-y:auto;background:#02080e88;border:1px solid #ffffff14;border-radius:13px;padding:8px;font-size:11px;scrollbar-width:thin}
+.chatMsg{margin:6px 0;padding:6px 8px;border-radius:10px;background:#ffffff0b;word-break:break-word;box-shadow:inset 0 1px #ffffff0a}.chatName{font-weight:1000;color:#69e8ff}
+.chatInputRow,.voiceRow{display:flex;gap:7px;margin-top:8px}
+#chatInput{min-width:0;flex:1;background:#ffffff0c;color:#fff;border:1px solid #ffffff25;border-radius:11px;padding:10px 11px;outline:none}
+#chatInput:focus{border-color:#28d7ff;box-shadow:0 0 0 3px #28d7ff18}
+#chatPanel button{border:1px solid #ffffff24;border-radius:11px;padding:9px 10px;background:linear-gradient(145deg,#18b9dc,#08708f);color:#fff;font-weight:900;font-size:10px;box-shadow:0 5px 14px #0007;transition:.15s}
+#chatPanel button:active{transform:scale(.94)}
+#voiceBtn{flex:1!important;background:linear-gradient(145deg,#8c55ff,#4d2199)!important}
+#voiceCount{font-size:9px;align-self:center;opacity:.85;padding:0 4px}
+.voice-speaking{box-shadow:0 0 0 2px #62ff9b,0 0 20px #62ff9b!important}
+@media(max-width:520px){#chatPanel{right:8px;top:300px;width:calc(100vw - 16px);max-width:300px}#chatMessages{height:105px}}
+#chatTitle{font-weight:900;font-size:12px;margin-bottom:6px}
+#chatMessages{height:120px;overflow-y:auto;background:#0005;border-radius:9px;padding:6px;font-size:11px}
+.chatMsg{margin:4px 0;word-break:break-word}.chatName{font-weight:900}
+.chatInputRow,.voiceRow{display:flex;gap:6px;margin-top:7px}
+#chatInput{min-width:0;flex:1;background:#ffffff18;color:#fff;border:1px solid #ffffff33;border-radius:8px;padding:8px}
+#chatPanel button{border:0;border-radius:8px;padding:8px 9px;background:#18a7c7;color:#fff;font-weight:800;font-size:10px}
+#voiceBtn{flex:1}#voiceCount{font-size:9px;align-self:center;opacity:.8}
+.voice-speaking{box-shadow:0 0 0 2px #62ff9b,0 0 14px #62ff9b}
+@media(max-width:520px){#chatPanel{right:8px;top:310px;width:220px}#chatMessages{height:95px}}
+
+/* ROHHINN chat icon + hidden panel */
+#chatIcon{position:fixed!important;right:18px!important;top:92px!important;bottom:auto!important;z-index:99999!important;width:64px!important;height:64px!important;border:2px solid #ffffff66!important;border-radius:50%!important;background:linear-gradient(145deg,#25ddff,#08749d)!important;color:#fff!important;font-size:31px!important;display:grid!important;place-items:center!important;box-shadow:0 8px 28px #000b,0 0 30px #19d9ff88!important;cursor:pointer!important;transition:.18s!important;touch-action:manipulation!important;pointer-events:auto!important}
+#chatIcon:active{transform:scale(.9)}
+#chatBadge{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#ff315b;color:#fff;font:bold 10px Arial;display:none;place-items:center;border:2px solid #07101c}
+#chatPanel{display:none}
+#chatPanel.chat-open{display:block}
+@media(max-width:520px){#chatIcon{right:16px!important;top:88px!important;bottom:auto!important;width:60px!important;height:60px!important;border-radius:50%!important;font-size:29px!important}}
+</style>
+</head>
+<body>
+<div id="start"><div class="start-wrap"><div class="card">
+<div class="brand">JUST TALK • ROHHINN STUDIOS</div>
+<h1>🌴 KERALA<br>OPEN WORLD</h1>
+<p class="subtitle">Your Kerala. Your journey. Your story.<br>Explore a living open world filled with roads, villages, beaches, backwaters and adventures.</p>
+<div class="features"><span class="feature">🚗 DRIVE</span><span class="feature">🗺️ EXPLORE</span><span class="feature">🎯 MISSIONS</span><span class="feature">🌐 LIVE WORLD</span><span class="feature">🎙️ VOICE CHAT</span></div>
+<button class="start" onclick="startGame()">▶ START YOUR JOURNEY</button>
+<div class="creator">A game world created by <b>ROHHINN</b></div>
+</div></div></div>
+
+<div id="hud">
+🪙 ₹<span id="money">500</span> &nbsp; ⭐ Rep <span id="rep">0</span><br>
+📍 <span id="area">Coconut Village</span> &nbsp; ❤️ <span id="health">100</span><br>
+🧍 Blocky Avatar &nbsp; 🚗 <span id="vehicleName">On Foot</span>
+</div>
+<div id="mission">🎯 <b>Mission</b><br><span id="missionText">Collect 5 coins and visit the market</span></div>
+<div id="notice"></div>
+<div id="multiplayer">
+  <div class="mp-title">🌐 ONE LIVE WORLD</div>
+  <div id="mpStatus">Connecting…</div>
+  <div id="playerCount">👥 Players online: 0</div>
+  <small>Everyone automatically joins the same world/server.</small>
+</div>
+<button id="chatIcon" aria-label="Open world chat">💬<span id="chatBadge">0</span></button>
+<div id="chatPanel">
+  <div id="chatTitle">💬 WORLD CHAT</div>
+  <div id="chatMessages"></div>
+  <div class="chatInputRow">
+    <input id="chatInput" maxlength="180" placeholder="Type a message…">
+    <button id="sendChat">SEND</button>
+  </div>
+  <div class="voiceRow">
+    <button id="voiceBtn">🎙️ VOICE CHAT: OFF</button>
+    <span id="voiceCount">0 speaking</span>
+  </div>
+</div>
+<div id="voiceAudios"></div>
+<div id="vehicle">E: Enter/Exit vehicle • Space/Boost: Accelerate</div>
+
+<div id="controls">
+ <div id="stick"><div id="knob"></div></div>
+ <div class="btns">
+  <button class="btn action-enter" data-action="enter"><span class="icon">🚗</span><span>ENTER</span></button>
+  <button class="btn action-boost" data-key="shift"><span class="icon">⚡</span><span>BOOST</span></button>
+  <button class="btn action-jump" data-action="jump"><span class="icon">🏃</span><span>JUMP</span></button>
+  <button class="btn action-cam" data-action="cam"><span class="icon">📷</span><span>CAM</span></button>
+ </div>
+</div>
+
+<canvas id="game"></canvas>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js';
+
+const canvas=document.getElementById('game');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x87cfe8);
+scene.fog=new THREE.Fog(0x87cfe8,90,420);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,600);
+
+const hemi=new THREE.HemisphereLight(0xcff5ff,0x294622,2.0); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,2.2); sun.position.set(-120,150,80); sun.castShadow=true; scene.add(sun);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshStandardMaterial({color:0x4e974c}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+const groups={village:new THREE.Group(),city:new THREE.Group(),beach:new THREE.Group(),hills:new THREE.Group(),paddy:new THREE.Group(),backwater:new THREE.Group(),temple:new THREE.Group(),market:new THREE.Group()};
+Object.values(groups).forEach(g=>scene.add(g));
+
+function mat(c,rough=.8){return new THREE.MeshStandardMaterial({color:c,roughness:rough})}
+function box(g,x,y,z,w,h,d,c,rot=0){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.rotation.y=rot;m.castShadow=true;m.receiveShadow=true;g.add(m);return m;
+}
+function cyl(g,x,y,z,r,h,c){
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),mat(c));m.position.set(x,y,z);m.castShadow=true;g.add(m);return m;
+}
+function tree(g,x,z,s=1){
+ cyl(g,x,2*s,z,.38*s,4*s,0x704321);
+ for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.SphereGeometry((2.2-i*.25)*s,10,8),mat(0x176b36));m.position.set(x+(i-1)*.55*s,4.6*s+i*.65*s,z+(i%2)*.45*s);m.castShadow=true;g.add(m)}
+}
+function house(g,x,z,c=0xe8d2a6){
+ box(g,x,1.7,z,8,3.4,6,c);
+ const r=new THREE.Mesh(new THREE.ConeGeometry(5.4,3.0,4),mat(0x8b3d25));r.rotation.y=Math.PI/4;r.position.set(x,4.7,z);r.castShadow=true;g.add(r);
+ box(g,x,1,z-3.08,1.5,2,.2,0x4b2b1c);
+}
+function road(x,z,w,d,c=0x484944){box(groups.city,x,.02,z,w,.06,d,c)}
+function sign(x,z,text,c=0xffffff){
+ const s=box(groups.city,x,2,z,.12,2.2,.12,c); const label=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture(text),transparent:true}));label.scale.set(7,1.8,1);label.position.set(x,3.7,z);groups.city.add(label);return s;
+}
+function labelTexture(t){const cv=document.createElement('canvas');cv.width=768;cv.height=160;const x=cv.getContext('2d');x.fillStyle='#111d';x.fillRect(0,0,768,160);x.strokeStyle='#ffffff55';x.lineWidth=6;x.strokeRect(8,8,752,144);x.fillStyle='#fff';x.font='bold 54px Arial';x.textAlign='center';x.fillText(t,384,100);return new THREE.CanvasTexture(cv)}
+
+
+// ---------- Non-box architecture: Kerala homes, shops & mall ----------
+function archMat(c,rough=.72){return new THREE.MeshStandardMaterial({color:c,roughness:rough})}
+function curvedWall(g,x,y,z,r,h,c,sides=12){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,sides),archMat(c));
+  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;g.add(m);return m;
+}
+function roofCone(g,x,y,z,r,h,c,sides=8){
+  const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,sides),archMat(c));
+  m.position.set(x,y,z);m.rotation.y=Math.PI/8;m.castShadow=true;g.add(m);return m;
+}
+function domeRoof(g,x,y,z,r,c){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,8,0,Math.PI*2,0,Math.PI/2),archMat(c));
+  m.position.set(x,y,z);m.scale.y=.75;m.castShadow=true;g.add(m);return m;
+}
+function roundWindow(g,x,y,z,r,c=0x79c8d5){
+  const m=new THREE.Mesh(new THREE.CircleGeometry(r,16),archMat(c));
+  m.position.set(x,y,z);m.rotation.y=Math.PI;m.castShadow=true;g.add(m);
+  return m;
+}
+function pillar(g,x,y,z,r,h,c=0xe7d6bd){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),archMat(c));
+  m.position.set(x,y,z);m.castShadow=true;g.add(m);return m;
+}
+function detailedHouse(g,x,z,c=0xe6d1aa,style=0){
+  // Rounded Kerala villa silhouette instead of a rectangular box.
+  curvedWall(g,x,2.2,z,5.2,4.4,c,12);
+  // Front verandah
+  for(const xx of [-2.7,2.7]) pillar(g,x+xx,1.65,z-4.15,.24,3.3,0xf0e0c5);
+  curvedWall(g,x,3.25,z-3.9,4.1,.35,0xc8a36e,12);
+  // Sloped roof + ridge cap
+  roofCone(g,x,5.75,z,6.1,3.2,style%2?0x6d2c20:0x8e3e27,8);
+  roofCone(g,x,6.55,z,2.0,.9,0x6b2c20,8);
+  // Arched-looking front windows and door
+  roundWindow(g,x-2.2,3.0,z-4.95,1.0,0x86c9d2);
+  roundWindow(g,x+2.2,3.0,z-4.95,1.0,0x86c9d2);
+  curvedWall(g,x,1.65,z-4.95,.9,2.3,0x5b3825,12);
+  // Balcony rail
+  for(const xx of [-1.8,-.9,0,.9,1.8]) pillar(g,x+xx,2.7,z-5.05,.09,1.2,0xd7c19b);
+  // garden palms
+  tree(g,x-5.7,z-2.8,.65); tree(g,x+5.7,z-2.8,.65);
+}
+function shop(g,x,z,name="SHOP",c=0xe1a744){
+  // Rounded two-storey commercial building.
+  curvedWall(g,x,3.2,z,5.8,6.4,c,16);
+  domeRoof(g,x,6.65,z,5.95,0x59636a);
+  // large glass storefront
+  roundWindow(g,x,2.9,z-5.65,3.35,0x65b7c7);
+  roundWindow(g,x,6.0,z-5.55,2.0,0x9bd5dc);
+  // canopy and sign
+  const can=new THREE.Mesh(new THREE.CylinderGeometry(3.9,3.9,.28,16),archMat(0xc83a2f));
+  can.position.set(x,4.55,z-5.35);can.scale.z=.34;can.rotation.x=Math.PI/2;g.add(can);
+  const label=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture(name),transparent:true}));
+  label.scale.set(8,1.35,1);label.position.set(x,5.0,z-6.05);g.add(label);
+  // side display columns
+  for(const xx of [-4.3,4.3]) pillar(g,x+xx,2.2,z-4.8,.18,4.2,0xf1d8ae);
+}
+function mall(g,x,z,name="TRIVANDRUM CITY MALL"){
+  // Landmark with curved corners and a glass dome, deliberately avoiding box geometry.
+  curvedWall(g,x,7.5,z,25,15,0xcbd1d5,24);
+  domeRoof(g,x,15.3,z,25,0x75828a);
+  // glass facade
+  for(let i=0;i<12;i++){
+    const a=-Math.PI*.48+i*(Math.PI*.96/11);
+    const xx=x+Math.sin(a)*24.6, zz=z-Math.cos(a)*24.6;
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,10,12,1,true,0,Math.PI*1.5),archMat(0x68b9c9,.35));
+    w.position.set(xx,7.2,zz);w.scale.set(.7,.95,.15);w.rotation.y=a;g.add(w);
+  }
+  // grand circular entrance
+  curvedWall(g,x,5.4,z-24.0,7.0,10.5,0x273740,16);
+  domeRoof(g,x,11.0,z-24.0,7.2,0x9de1e8);
+  const label=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture(name),transparent:true}));
+  label.scale.set(17,2.5,1);label.position.set(x,13.0,z-26.0);g.add(label);
+  // parking lamps
+  for(const xx of [-18,18]){pillar(g,x+xx,3,z+29,.13,6,.25);curvedWall(g,x+xx,6,z+29,.32,.22,0xffe7a1,12)}
+}
+function apartment(g,x,z,c=0xd5cfc0){
+  curvedWall(g,x,5,z,9.2,10,c,16);
+  domeRoof(g,x,10.4,z,9.3,0x777777);
+  for(const a of [-.7,-.35,0,.35,.7]){
+    const xx=x+Math.sin(a)*8.9,zz=z-Math.cos(a)*8.9;
+    roundWindow(g,xx,4.2,zz,1.15,0x82bec8);
+  }
+}
+function buildCommercialDistrict(){
+  mall(groups.city,0,-190,"TRIVANDRUM CITY MALL");
+  shop(groups.city,-28,-165,"BAKERY",0xe3b35d);
+  shop(groups.city,28,-165,"TEXTILES",0xd58d57);
+  shop(groups.city,-28,-125,"TEA SHOP",0xd9ad5b);
+  shop(groups.city,28,-125,"MOBILE",0x91aec6);
+  shop(groups.city,-28,-85,"PHARMACY",0xb7d8d0);
+  shop(groups.city,28,-85,"SUPERMARKET",0xd6b16d);
+  apartment(groups.city,-25,-35,0xd9c6ac);
+  apartment(groups.city,25,-35,0xc4d2d6);
+}
+function buildBetterHomes(){
+  for(let i=-220;i<=220;i+=55){
+    detailedHouse(groups.village,-82,i,0xe8d2a6,i);
+    detailedHouse(groups.village,82,i+22,0xd8c29f,i+1);
+  }
+  detailedHouse(groups.city,-48,205,0xd9e1dd,1);
+  detailedHouse(groups.city,48,205,0xe8c89b,0);
+}
+
+function buildWorld(){
+  // Roads stay flat for gameplay, but all visible buildings/structures are now curved or organic.
+  box(groups.city,0,.01,0,20,.05,620,0x3f403d);
+  box(groups.city,0,.02,0,620,.05,20,0x3f403d);
+  box(groups.village,-70,.02,0,8,.05,500,0x67645b);
+  box(groups.village,70,.02,0,8,.05,500,0x67645b);
+
+  // Coconut village — only detailed rounded Kerala homes.
+  for(let i=-250;i<=250;i+=38){
+    tree(groups.village,-105,i,.9); tree(groups.village,-45,i+13,.8);
+    tree(groups.village,105,i+8,.9); tree(groups.village,45,i-9,.8);
+  }
+  buildBetterHomes();
+
+  // Busy town — replace every old rectangular city block with rounded apartments.
+  for(const p of [
+    [-48,-150,0xd7c8b4],[48,-150,0xc8d5d8],
+    [-48,-110,0xd5d0bd],[48,-110,0xd0c7b4],
+    [-48,-70,0xcbd7d9],[48,-70,0xd9c8ae],
+    [-48,-25,0xd3d0c8],[48,-25,0xc8d5ce],
+    [-48,35,0xd8c5ad],[48,35,0xc8d6d8],
+    [-48,95,0xd2c7b7],[48,95,0xcbd4d0],
+    [-48,155,0xd6d1c5],[48,155,0xd1c4ae]
+  ]) apartment(groups.city,p[0],p[1],p[2]);
+
+  // Commercial street — rounded shops and landmark mall.
+  buildCommercialDistrict();
+
+  // Market — curved kiosks, no rectangular stalls.
+  shop(groups.market,-18,-85,"FRUITS",0xe1a83b);
+  shop(groups.market,-6,-85,"SPICES",0xc98a42);
+  shop(groups.market,6,-85,"TEA",0xd39d4e);
+  shop(groups.market,18,-85,"HANDICRAFTS",0xd47b55);
+
+  // Paddy fields remain low and flat, not buildings.
+  for(let x=-210;x<=-120;x+=30)
+    for(let z=-170;z<=170;z+=35)
+      box(groups.paddy,x,.02,z,25,.04,29,0x82ad48);
+
+  // Beach and sea are flat terrain surfaces, not structures.
+  box(groups.beach,205,.01,40,90,.03,330,0xe5cf92);
+  box(groups.beach,265,-.1,40,40,.03,330,0x198da4);
+  for(let z=-100;z<=180;z+=35) tree(groups.beach,190,z,1.05);
+
+  // Organic low-poly hills.
+  for(let i=0;i<12;i++){
+    const m=new THREE.Mesh(new THREE.ConeGeometry(25+Math.random()*18,45+Math.random()*35,8),mat(0x315d3c));
+    m.position.set(-205+i*22,20,-230);m.castShadow=true;groups.hills.add(m);
+  }
+  for(let i=0;i<12;i++){
+    const m=new THREE.Mesh(new THREE.ConeGeometry(24+Math.random()*15,40+Math.random()*35,8),mat(0x3b7143));
+    m.position.set(-205+i*22,18,230);m.castShadow=true;groups.hills.add(m);
+  }
+
+  // Backwater.
+  const w=new THREE.Mesh(new THREE.PlaneGeometry(110,260),
+    new THREE.MeshStandardMaterial({color:0x16899d,transparent:true,opacity:.9}));
+  w.rotation.x=-Math.PI/2;w.position.set(115,.03,0);groups.backwater.add(w);
+
+  // Rounded temple/church silhouettes instead of box buildings.
+  curvedWall(groups.temple,155,2,150,9,4,0xf0d18c,16);
+  roofCone(groups.temple,155,7,150,7,5,0xd77c31,8);
+  curvedWall(groups.temple,155,8.5,150,3.8,12,0xd77c31,12);
+
+  curvedWall(groups.temple,155,3,190,10,6,0xf0e6d1,16);
+  roofCone(groups.temple,155,8,190,6,9,0xffffff,4);
+  roofCone(groups.temple,155,15,190,2.2,6,0xf0e6d1,4);
+
+  // Wooden docks are narrow planks; houseboats have rounded hulls.
+  for(let z=-100;z<=100;z+=40){
+    const dock=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,24,10),
+      archMat(0x69472e));
+    dock.rotation.z=Math.PI/2;dock.position.set(115,.5,z);
+    dock.castShadow=true;groups.backwater.add(dock);
+    houseboat(115,z);
+  }
+
+  addWorldLabel('MARKET',0,9,-85);
+  addWorldLabel('BEACH',205,5,0);
+  addWorldLabel('HILLS',-180,5,-230);
+  addWorldLabel('BACKWATERS',115,5,-145);
+}
+function addWorldLabel(text,x,y,z){
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture(text),transparent:true}));
+  sp.scale.set(14,3,1);sp.position.set(x,y,z);scene.add(sp);
+}
+function houseboat(x,z){
+  const g=new THREE.Group();
+  const hull=new THREE.Mesh(new THREE.CapsuleGeometry(2.4,7,6,12),archMat(0x754a28));
+  hull.rotation.y=Math.PI/2;hull.scale.y=.45;hull.position.set(x,.9,z);hull.castShadow=true;g.add(hull);
+  curvedWall(g,x,2.0,z,3.1,2.1,0xe5c68d,12);
+  roofCone(g,x,3.7,z,3.5,1.8,0x8b3f25,8);
+  groups.backwater.add(g);
+}
+
+buildWorld();
+
+// Player
+// Blocky toy-like player character inspired by classic sandbox avatars
+function blockCharacter(bodyColor=0x245cff, skinColor=0xf1b58b){
+ const g=new THREE.Group();
+ // Premium stylized character with layered clothes, hair, face, hands and shoes.
+ const skin=mat(skinColor,.65), clothes=mat(bodyColor,.72), dark=mat(0x15171b,.7);
+ const hair=mat(0x17110d,.9), shoe=mat(0xeeeeee,.55), sole=mat(0x202020,.85);
+ const accent=mat(0xffffff,.6);
+
+ for(const x of [-.34,.34]){
+   const leg=new THREE.Mesh(new THREE.BoxGeometry(.48,1.38,.58),dark);
+   leg.position.set(x,.76,0);leg.castShadow=true;g.add(leg);
+   const sh=new THREE.Mesh(new THREE.BoxGeometry(.56,.30,.86),shoe);
+   sh.position.set(x,.16,-.10);sh.castShadow=true;g.add(sh);
+   const so=new THREE.Mesh(new THREE.BoxGeometry(.59,.10,.88),sole);
+   so.position.set(x,.03,-.10);so.castShadow=true;g.add(so);
+ }
+
+ const torso=new THREE.Mesh(new THREE.BoxGeometry(1.32,1.45,.74),clothes);
+ torso.position.y=2.12;torso.castShadow=true;g.add(torso);
+
+ const pocket=new THREE.Mesh(new THREE.BoxGeometry(.72,.26,.04),mat(0x111827,.85));
+ pocket.position.set(0,1.86,.405);g.add(pocket);
+
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.30,12),skin);
+ neck.position.y=2.96;neck.castShadow=true;g.add(neck);
+
+ const head=new THREE.Mesh(new THREE.BoxGeometry(1.08,1.08,1.02),skin);
+ head.position.y=3.55;head.castShadow=true;g.add(head);
+
+ const cap=new THREE.Mesh(new THREE.BoxGeometry(1.13,.34,1.07),hair);
+ cap.position.set(0,4.10,0);cap.castShadow=true;g.add(cap);
+ for(const x of [-.38,-.13,.13,.38]){
+   const fringe=new THREE.Mesh(new THREE.BoxGeometry(.25,.30,.18),hair);
+   fringe.position.set(x,3.99,.48);fringe.rotation.x=.12;g.add(fringe);
+ }
+
+ const eyeMat=mat(0x101010,.55),browMat=mat(0x2b1710,.9);
+ for(const x of [-.22,.22]){
+   const brow=new THREE.Mesh(new THREE.BoxGeometry(.22,.055,.05),browMat);
+   brow.position.set(x,3.70,.525);brow.rotation.z=x<0?.08:-.08;g.add(brow);
+   const eye=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),eyeMat);
+   eye.position.set(x,3.57,.535);g.add(eye);
+ }
+ const nose=new THREE.Mesh(new THREE.BoxGeometry(.10,.16,.10),skin);
+ nose.position.set(0,3.46,.55);g.add(nose);
+ const smile=new THREE.Mesh(new THREE.BoxGeometry(.28,.055,.035),eyeMat);
+ smile.position.set(0,3.30,.54);g.add(smile);
+
+ for(const x of [-.57,.57]){
+   const ear=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),skin);
+   ear.scale.set(.65,1,1);ear.position.set(x,3.55,0);g.add(ear);
+ }
+
+ for(const x of [-.50,.50]){
+   const arm=new THREE.Mesh(new THREE.BoxGeometry(.42,1.38,.56),clothes);
+   arm.position.set(x,2.10,0);arm.castShadow=true;g.add(arm);
+   const hand=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),skin);
+   hand.position.set(x,1.37,0);hand.castShadow=true;g.add(hand);
+ }
+
+ for(const x of [-.10,.10]){
+   const cord=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.40,6),accent);
+   cord.position.set(x,3.00,.40);cord.rotation.z=x<0?.08:-.08;g.add(cord);
+ }
+
+ g.userData={parts:true,baseY:0};
+ return g;
+}
+const player=blockCharacter();
+player.scale.setScalar(1.06);
+player.position.set(0,0,70);scene.add(player);
+
+// vehicles
+const vehicles=[];
+function vehicle(type,x,z,c){
+  const g=new THREE.Group(); g.position.set(x,.8,z);
+  const dark=archMat(0x17191c,.8), glass=archMat(0x9bd5df,.28);
+  const body=archMat(c,.58);
+
+  if(type==='Car'){
+    const lower=new THREE.Mesh(new THREE.CapsuleGeometry(1.25,2.5,5,12),body);
+    lower.rotation.x=Math.PI/2; lower.scale.y=.72; lower.position.y=.05; lower.castShadow=true; g.add(lower);
+    const cabin=new THREE.Mesh(new THREE.CapsuleGeometry(.95,1.55,5,12),glass);
+    cabin.rotation.x=Math.PI/2; cabin.scale.y=.55; cabin.position.set(0,.85,.05); cabin.castShadow=true; g.add(cabin);
+    for(const xx of [-1.35,1.35]) for(const zz of [-1.35,1.35]){
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.22,14),dark);
+      w.rotation.z=Math.PI/2; w.position.set(xx,.0,zz); w.castShadow=true; g.add(w);
+    }
+    // headlights
+    for(const xx of [-.65,.65]){const l=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),archMat(0xfff0a5,.3));l.position.set(xx,.35,-2.0);g.add(l)}
+  }else if(type==='Bike'||type==='Cycle'||type==='Scooter'){
+    const isCycle=type==='Cycle', isScooter=type==='Scooter';
+    const wheelR=isCycle?.48:.43;
+    for(const zz of [-.9,.9]){
+      const w=new THREE.Mesh(new THREE.TorusGeometry(wheelR,.075,8,18),dark);
+      w.rotation.y=Math.PI/2; w.position.set(0,.58,zz);w.castShadow=true;g.add(w);
+    }
+    if(isScooter){
+      box(g,0,.62,0,0.5,.16,1.55,c);
+      box(g,0,1.02,.35,.12,.85,.12,dark);
+      box(g,0,1.45,.35,.72,.08,.08,dark);
+    }else{
+      // frame
+      for(const [a,b] of [[[-.05,.62,-.9],[0,.95,0]],[[.05,.62,.9],[0,.95,0]],[[-.05,.62,-.9],[.05,.62,.9]]]){
+        const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],len=Math.hypot(dx,dy,dz);
+        const bar=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,len,8),archMat(c,.65));
+        bar.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2);
+        bar.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,dy,dz).normalize());g.add(bar);
+      }
+      box(g,0,1.0,.9,.10,.75,.10,dark); box(g,0,1.02,.9,.65,.08,.08,dark);
+      if(isCycle) box(g,0,1.02,-.15,.42,.08,.55,0x4a2c1c);
+    }
+  }else if(type==='Auto'){
+    const hull=new THREE.Mesh(new THREE.CapsuleGeometry(1.05,1.45,5,12),body);
+    hull.rotation.x=Math.PI/2;hull.scale.y=.72;hull.position.y=.05;hull.castShadow=true;g.add(hull);
+    const canopy=new THREE.Mesh(new THREE.CapsuleGeometry(.92,.95,5,12),archMat(0x25363a,.5));
+    canopy.rotation.x=Math.PI/2;canopy.scale.y=.5;canopy.position.y=.9;g.add(canopy);
+    for(const zz of [-.85,.85]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.2,12),dark);w.rotation.z=Math.PI/2;w.position.set(0,.05,zz);g.add(w)}
+  }else if(type==='Bus'){
+    const hull=new THREE.Mesh(new THREE.CapsuleGeometry(1.7,4.6,6,16),body);
+    hull.rotation.x=Math.PI/2;hull.scale.y=.72;hull.position.y=.15;hull.castShadow=true;g.add(hull);
+    for(const zz of [-3,-1.5,0,1.5,3]){
+      const win=new THREE.Mesh(new THREE.SphereGeometry(.48,12,8,0,Math.PI*2,0,Math.PI/2),glass);
+      win.scale.set(1.0,.65,.12);win.position.set(0,1.35,zz);g.add(win);
+    }
+    for(const zz of [-2.6,-.9,.9,2.6]) for(const xx of [-1.72,1.72]){
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.22,12),dark);w.rotation.z=Math.PI/2;w.position.set(xx,.05,zz);g.add(w)
+    }
+  }else if(type==='Boat'){
+    const hull=new THREE.Mesh(new THREE.CapsuleGeometry(1.3,3.2,6,14),archMat(c,.65));
+    hull.rotation.y=Math.PI/2;hull.scale.y=.5;hull.position.y=0;hull.castShadow=true;g.add(hull);
+    curvedWall(g,0,1.05,0,1.0,1.4,0xe4c48c,12);
+    roofCone(g,0,2.0,0,1.35,.8,0x8b3f25,8);
+  }
+
+  g.userData={
+    type,
+    speed:type==='Bus'?9:type==='Car'?13:type==='Auto'?11:type==='Boat'?8:type==='Scooter'?14:type==='Bike'?15:12,
+    drivable:true
+  };
+  scene.add(g);vehicles.push(g);return g;
+}
+function spawnTraffic(){
+  // Parked/ambient traffic across the roads so the world feels populated.
+  const traffic=[
+    ['Car',-8,30,0xd53d36],['Car',8,-10,0x2e62a5],
+    ['Car',-25,-35,0xe3b72d],['Car',25,-105,0x3e9b62],
+    ['Bike',-12,75,0x242424],['Bike',12,135,0xc93c31],
+    ['Bike',-8,-145,0x1769a7],['Scooter',8,-45,0xe0a51f],
+    ['Scooter',-18,105,0xd34b5b],['Cycle',18,105,0x3c78b0],
+    ['Cycle',-18,175,0x4f9a61],['Auto',18,205,0x18a34c],
+    ['Bus',0,240,0xc74739]
+  ];
+  traffic.forEach(v=>vehicle(v[0],v[1],v[2],v[3]));
+}
+spawnTraffic();
+
+let currentVehicle=null;
+const keys={};let score=0,money=500,rep=0,health=100,running=false,camMode=0,clock=new THREE.Clock(),gameTime=8,raining=false;
+const coins=[];
+for(let i=0;i<35;i++){const c=new THREE.Mesh(new THREE.TorusGeometry(.45,.14,8,18),mat(0xffc400));c.rotation.x=Math.PI/2;c.position.set((Math.random()-.5)*380,1.2,(Math.random()-.5)*380);scene.add(c);coins.push(c)}
+const treasure=new THREE.Mesh(new THREE.OctahedronGeometry(1.1),mat(0xb46cff));treasure.position.set(-175,1.3,175);scene.add(treasure);
+const missionMarker=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,.2,20),mat(0x16e06f));missionMarker.position.set(0,.15,-85);scene.add(missionMarker);
+
+// NPCs + wildlife
+const npcs=[];
+const npcColors=[0xe55b42,0x7b4bd6,0x159447,0xe0a52b,0x2475c9,0xd94d7a];
+for(let i=0;i<18;i++){
+ const n=blockCharacter(npcColors[i%npcColors.length],0xf0b184);
+ n.scale.setScalar(.82);
+ n.position.set((Math.random()-.5)*180,0,(Math.random()-.5)*260);
+ n.userData={vx:(Math.random()-.5)*2,vz:(Math.random()-.5)*2};
+ scene.add(n);npcs.push(n)
+}
+const animals=[];
+for(let i=0;i<8;i++){const a=new THREE.Mesh(new THREE.SphereGeometry(.55,10,8),mat(0x6d4b32));a.position.set(-140+Math.random()*80,1,-170+Math.random()*340);scene.add(a);animals.push(a)}
+
+function toast(t){const e=document.getElementById('notice');e.textContent=t;e.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.style.display='none',2400)}
+function updateUI(){money=Math.round(money);document.getElementById('money').textContent=money;document.getElementById('rep').textContent=rep;document.getElementById('health').textContent=Math.round(health);document.getElementById('vehicleName').textContent=currentVehicle?currentVehicle.userData.type:'On Foot'}
+function enterVehicle(){
+ let best=null,dist=5;for(const v of vehicles){const d=v.position.distanceTo(player.position);if(d<dist){best=v;dist=d}}
+ if(currentVehicle){player.visible=true;player.position.copy(currentVehicle.position).add(new THREE.Vector3(3,0,0));currentVehicle=null;toast('Vehicle exited');updateUI();return}
+ if(best){currentVehicle=best;player.visible=false;toast('Driving '+best.userData.type+'!');updateUI()}
+}
+function horn(){toast('📣 Honk!')}
+function jump(){if(!currentVehicle){player.position.y=2.8;setTimeout(()=>player.position.y=1.5,250)}}
+function cycleCam(){camMode=(camMode+1)%3;toast(camMode===0?'Camera: Follow':camMode===1?'Camera: Wide':'Camera: Close')}
+window.startGame=()=>{document.getElementById('start').style.display='none';running=true;toast('Welcome! Explore Kerala and complete missions.')}
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')enterVehicle();if(e.code==='Space')keys.shift=true});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;if(e.code==='Space')keys.shift=false});
+
+document.querySelectorAll('.btn').forEach(b=>{
+ b.addEventListener('pointerdown',()=>{if(b.dataset.key)keys[b.dataset.key]=true;if(b.dataset.action==='enter')enterVehicle();if(b.dataset.action==='horn')horn();if(b.dataset.action==='jump')jump();if(b.dataset.action==='cam')cycleCam()});
+ b.addEventListener('pointerup',()=>{if(b.dataset.key)keys[b.dataset.key]=false});b.addEventListener('pointercancel',()=>{if(b.dataset.key)keys[b.dataset.key]=false});
+});
+
+// Free-look camera: touch swipe on the screen / mouse drag on desktop
+let camYaw=0, camPitch=.48, camDragging=false, camLastX=0, camLastY=0;
+function cameraDragStart(x,y){camDragging=true;camLastX=x;camLastY=y}
+function cameraDragMove(x,y){
+ if(!camDragging)return;
+ const dx=x-camLastX,dy=y-camLastY;
+ camLastX=x;camLastY=y;
+ camYaw-=dx*.006;
+ camPitch-=dy*.0045;
+ camPitch=Math.max(.12,Math.min(1.15,camPitch));
+}
+function cameraDragEnd(){camDragging=false}
+canvas.addEventListener('pointerdown',e=>cameraDragStart(e.clientX,e.clientY));
+canvas.addEventListener('pointermove',e=>cameraDragMove(e.clientX,e.clientY));
+canvas.addEventListener('pointerup',cameraDragEnd);
+canvas.addEventListener('pointercancel',cameraDragEnd);
+canvas.addEventListener('pointerleave',cameraDragEnd);
+canvas.addEventListener('wheel',e=>{camPitch+=e.deltaY*.001;camPitch=Math.max(.12,Math.min(1.15,camPitch))},{passive:true});
+
+// virtual joystick
+let stick={x:0,y:0};const st=document.getElementById('stick'),kn=document.getElementById('knob');
+function stickMove(e){const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let x=e.clientX-cx,y=e.clientY-cy;const l=Math.hypot(x,y),m=42;if(l>m){x=x/l*m;y=y/l*m}stick.x=x/m;stick.y=y/m;kn.style.transform=`translate(${x}px,${y}px)`;keys.a=stick.x<-.2;keys.d=stick.x>.2;keys.w=stick.y<-.2;keys.s=stick.y>.2}
+st.addEventListener('pointerdown',e=>{st.setPointerCapture(e.pointerId);stickMove(e)});st.addEventListener('pointermove',stickMove);st.addEventListener('pointerup',()=>{stick.x=stick.y=0;keys.a=keys.d=keys.w=keys.s=false;kn.style.transform='translate(0,0)'});
+
+function setWeather(){
+ raining=Math.random()<.35;
+ if(raining){scene.background.set(0x5e7680);scene.fog.color.set(0x5e7680);toast('🌧️ Kerala monsoon rain!')}
+ else {scene.background.set(0x87cfe8);scene.fog.color.set(0x87cfe8)}
+}
+let nextWeather=20;
+const rainGeo=new THREE.BufferGeometry(),rainCount=900,arr=new Float32Array(rainCount*3);
+for(let i=0;i<rainCount;i++){arr[i*3]=(Math.random()-.5)*500;arr[i*3+1]=Math.random()*120;arr[i*3+2]=(Math.random()-.5)*500}
+rainGeo.setAttribute('position',new THREE.BufferAttribute(arr,3));
+const rain=new THREE.Points(rainGeo,new THREE.PointsMaterial({color:0xaedcff,size:.18,transparent:true,opacity:.7}));rain.visible=false;scene.add(rain);
+
+function dayNight(dt){
+ gameTime+=dt*0.12;if(gameTime>=24)gameTime-=24;
+ const daylight=Math.max(.08,Math.sin((gameTime-6)/12*Math.PI));
+ sun.intensity=.3+1.9*daylight;hemi.intensity=.5+1.6*daylight;
+ const sky=new THREE.Color().setHSL(.54,.55,.22+.45*daylight);scene.background.copy(sky);scene.fog.color.copy(sky);
+}
+function areaName(p){
+ if(p.x>160)return 'Kerala Beach';
+ if(p.x>70)return 'Backwaters';
+ if(p.x<-110)return p.z<-120?'Western Ghats':'Paddy Fields';
+ if(Math.abs(p.x)<55 && Math.abs(p.z)<160)return 'Busy Town';
+ if(Math.abs(p.x)>55)return 'Coconut Village';
+ return 'Town Road';
+}
+function missions(){
+ if(score<5){document.getElementById('missionText').textContent=`Collect 5 coins (${score}/5) and visit the market`}
+ else if(score===5 && rep<5){document.getElementById('missionText').textContent='Visit the market to earn reputation'}
+ else if(rep>=5 && money<900){document.getElementById('missionText').textContent='Earn ₹900 — try a vehicle mission'}
+ else {document.getElementById('missionText').textContent='Explore freely — find the purple treasure!'}
+ if(score>=5 && player.position.distanceTo(missionMarker.position)<12 && rep<5){rep+=5;money+=300;toast('🛍️ Market mission complete! +₹300 +5 Rep');updateUI()}
+ if(rep>=5 && money>=900 && treasure.visible && player.position.distanceTo(treasure.position)<4){treasure.visible=false;money+=1000;rep+=10;toast('💎 Hidden treasure found! +₹1000 +10 Rep');updateUI()}
+}
+function randomEvents(){
+ if(Math.random()<.004){money+=50;toast('🎉 Festival event! A friendly NPC rewards you ₹50.');updateUI()}
+ if(Math.random()<.003){toast('🚨 Police patrol spotted nearby! Drive carefully.')}
+}
+function driveVehicle(dt){
+ const v=currentVehicle;if(!v)return;
+ let forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0),turn=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+ let boost=keys.shift?1.7:1;const speed=v.userData.speed*boost;
+ v.rotation.y-=turn*dt*1.8;
+ v.translateZ(-forward*speed*dt);
+ v.position.x=Math.max(-330,Math.min(330,v.position.x));v.position.z=Math.max(-330,Math.min(330,v.position.z));
+ if(keys.shift&&forward)money=Math.max(0,money-.01);
+ player.position.copy(v.position);player.position.y=1.5;
+ // vehicle mission reward for moving around
+ if(Math.abs(v.position.x)>140 || Math.abs(v.position.z)>230){rep=Math.min(100,rep+.001);money+=.02}
+}
+function walk(dt){
+ let sx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+ let sy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+ const l=Math.hypot(sx,sy)||1; sx/=l; sy/=l;
+ // Convert joystick/keyboard input into camera-relative world movement.
+ const forwardX=Math.sin(camYaw), forwardZ=Math.cos(camYaw);
+ const rightX=Math.cos(camYaw), rightZ=-Math.sin(camYaw);
+ const dx=rightX*sx + forwardX*sy;
+ const dz=rightZ*sx + forwardZ*sy;
+ const sp=keys.shift?18:9;
+ player.position.x+=dx*sp*dt; player.position.z+=dz*sp*dt;
+ if(dx||dz){
+   player.rotation.y=Math.atan2(dx,dz);
+   player.userData.walkTime=(player.userData.walkTime||0)+dt*10;
+   const swing=Math.sin(player.userData.walkTime)*.35;
+   if(player.children.length>=8){
+     player.children[4].rotation.x=swing; player.children[5].rotation.x=-swing;
+     player.children[6].rotation.x=-swing; player.children[7].rotation.x=swing;
+   }
+ }
+ player.position.x=Math.max(-330,Math.min(330,player.position.x));
+ player.position.z=Math.max(-330,Math.min(330,player.position.z));
+}
+
+// ---------- Live multiplayer + world chat + proximity voice ----------
+const remotePlayers=new Map();
+const peerConnections=new Map();
+const voiceStreams=new Map();
+let socket=null,myId=null,myName='Player',voiceStream=null,voiceOn=false;
+const MP_SERVER=(location.host)?(location.protocol==='https:'?'wss://':'ws://')+location.host:null;
+const rtcConfig={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
+
+function mpStatus(t){document.getElementById('mpStatus').textContent=t}
+function mpCount(n){document.getElementById('playerCount').textContent='👥 Players online: '+n}
+function addChat(name,msg,own=false){
+  const box=document.getElementById('chatMessages'), d=document.createElement('div');
+  d.className='chatMsg';
+  d.innerHTML='<span class="chatName">'+(own?'You':name)+'</span>: '+String(msg).replace(/[<>&"]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[s]));
+  box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+function makeRemotePlayer(data){
+  const g=blockCharacter(data.color||0xff6b35,0xf1b58b);g.scale.setScalar(.92);
+  g.position.set(data.x||0,0,data.z||0);
+  const label=new THREE.Sprite(new THREE.SpriteMaterial({map:labelTexture(data.name||'PLAYER'),transparent:true}));
+  label.scale.set(5,1,1);label.position.y=5.1;g.add(label);
+  scene.add(g);return g;
+}
+function closePeer(id){
+  const pc=peerConnections.get(id);if(pc)pc.close();
+  peerConnections.delete(id);
+  const a=voiceStreams.get(id);if(a){a.pause();a.srcObject=null;a.remove();voiceStreams.delete(id)}
+}
+function refreshVoiceCount(){document.getElementById('voiceCount').textContent=voiceStreams.size+(voiceOn?1:0)+' connected'}
+function voiceState(t){document.getElementById('voiceBtn').textContent=t}
+async function createPeer(id,initiator=false){
+  if(!socket||socket.readyState!==WebSocket.OPEN||id===myId)return null;
+  let pc=peerConnections.get(id);
+  if(pc)return pc;
+
+  pc=new RTCPeerConnection(rtcConfig);
+  pc.__makingOffer=false;
+  pc.__polite=myId>id; // deterministic glare handling
+  pc.__pendingCandidates=[];
+  peerConnections.set(id,pc);
+
+  if(voiceStream) voiceStream.getTracks().forEach(t=>pc.addTrack(t,voiceStream));
+
+  pc.onicecandidate=e=>{
+    if(e.candidate && socket?.readyState===WebSocket.OPEN)
+      socket.send(JSON.stringify({type:'voice-signal',to:id,candidate:e.candidate}));
+  };
+
+  pc.ontrack=e=>{
+    let a=voiceStreams.get(id);
+    if(!a){
+      a=document.createElement('audio');
+      a.autoplay=true;a.playsInline=true;a.controls=false;a.volume=1;
+      a.style.display='none';
+      document.getElementById('voiceAudios').appendChild(a);
+      voiceStreams.set(id,a);
+    }
+    a.srcObject=e.streams[0];
+    a.play().catch(()=>{});
+    refreshVoiceCount();
+  };
+
+  pc.onconnectionstatechange=()=>{
+    if(pc.connectionState==='connected') mpStatus('🟢 LIVE • Voice connected');
+    if(['failed','closed'].includes(pc.connectionState)) closePeer(id);
+  };
+
+  pc.onnegotiationneeded=async()=>{
+    if(!initiator || pc.signalingState!=='stable' || pc.__makingOffer)return;
+    try{
+      pc.__makingOffer=true;
+      const offer=await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      if(socket?.readyState===WebSocket.OPEN)
+        socket.send(JSON.stringify({type:'voice-signal',to:id,description:pc.localDescription}));
+    }catch(e){console.warn('Voice offer error',e)}
+    finally{pc.__makingOffer=false}
+  };
+
+  // Explicitly create the offer for the designated initiator.
+  if(initiator && pc.signalingState==='stable'){
+    try{
+      pc.__makingOffer=true;
+      const offer=await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      if(socket?.readyState===WebSocket.OPEN)
+        socket.send(JSON.stringify({type:'voice-signal',to:id,description:pc.localDescription}));
+    }catch(e){console.warn('Voice offer error',e)}
+    finally{pc.__makingOffer=false}
+  }
+  return pc;
+}
+
+async function handleVoiceSignal(m){
+  if(m.from===myId)return;
+  let pc=peerConnections.get(m.from);
+  if(!pc) pc=await createPeer(m.from,false);
+  if(!pc)return;
+
+  try{
+    if(m.description){
+      const offerCollision =
+        m.description.type==='offer' &&
+        (pc.__makingOffer || pc.signalingState!=='stable');
+
+      if(offerCollision && !pc.__polite) return;
+
+      if(offerCollision && pc.__polite){
+        await pc.setLocalDescription({type:'rollback'});
+      }
+
+      await pc.setRemoteDescription(m.description);
+
+      if(m.description.type==='offer'){
+        if(voiceStream && !pc.getSenders().some(s=>s.track))
+          voiceStream.getTracks().forEach(t=>pc.addTrack(t,voiceStream));
+
+        const answer=await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        if(socket?.readyState===WebSocket.OPEN)
+          socket.send(JSON.stringify({type:'voice-signal',to:m.from,description:pc.localDescription}));
+      }
+
+      if(pc.__pendingCandidates?.length){
+        for(const c of pc.__pendingCandidates) await pc.addIceCandidate(c);
+        pc.__pendingCandidates=[];
+      }
+    }else if(m.candidate){
+      if(pc.remoteDescription) await pc.addIceCandidate(m.candidate);
+      else pc.__pendingCandidates.push(m.candidate);
+    }
+  }catch(e){console.warn('Voice signaling error',e)}
+}
+
+async function startVoice(){
+  if(voiceOn)return;
+  if(!navigator.mediaDevices?.getUserMedia){mpStatus('⚠️ Microphone needs HTTPS/localhost');toast('🎙️ Open this game from HTTPS or localhost to use the microphone');return}
+  try{
+    voiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
+    voiceOn=true;
+    voiceState('🔴 VOICE CHAT: ON');
+    document.getElementById('voiceBtn').classList.add('voice-speaking');
+    mpStatus(socket?.readyState===WebSocket.OPEN?'🟢 LIVE • Voice ready':'🟡 Mic ready • Multiplayer server not connected');
+    for(const id of remotePlayers.keys()) if(myId && myId<id) await createPeer(id,true);
+    refreshVoiceCount();
+  }catch(e){
+    console.warn('Microphone error',e);
+    mpStatus('🎙️ Microphone permission denied');
+    toast('🎙️ Allow microphone permission, then tap Voice Chat again');
+  }
+}
+function stopVoice(){
+  if(!voiceOn)return;
+  voiceOn=false;voiceStream?.getTracks().forEach(t=>t.stop());voiceStream=null;
+  for(const pc of peerConnections.values())pc.close();
+  peerConnections.clear();
+  voiceState('🎙️ VOICE CHAT: OFF');
+  document.getElementById('voiceBtn').classList.remove('voice-speaking');refreshVoiceCount();
+}
+document.getElementById('voiceBtn').onclick=()=>voiceOn?stopVoice():startVoice();
+
+let reconnectTimer=null;
+function connectToWorld(){
+  if(!MP_SERVER){
+    mpStatus('🟡 Offline mode • Chat works locally');
+    mpCount(1);
+    addChat('ROHHINN','Welcome to Kerala Open World! Chat is ready.');
+    return;
+  }
+  mpStatus('Connecting to the shared world…');
+  try{socket=new WebSocket(MP_SERVER)}catch(e){mpStatus('🟡 Offline mode • Chat works locally');return}
+  socket.onopen=()=>{
+    mpStatus('🟢 LIVE • Shared World');
+    socket.send(JSON.stringify({type:'join',name:myName,color:0x245cff}));
+  };
+  socket.onmessage=e=>{
+    let m;try{m=JSON.parse(e.data)}catch(err){return}
+    if(m.type==='welcome'){myId=m.id;return}
+    if(m.type==='chat'){addChat(m.name,m.message);return}
+    if(m.type==='voice-signal'){handleVoiceSignal(m);return}
+    if(m.type==='voice-peer'){if(voiceOn && myId && myId<m.id)createPeer(m.id,true);return}
+    if(m.type==='players'){
+      const seen=new Set();mpCount(m.players.length);
+      m.players.forEach(p=>{
+        if(p.id===myId)return;seen.add(p.id);
+        let r=remotePlayers.get(p.id);
+        if(!r){r=makeRemotePlayer(p);remotePlayers.set(p.id,r);if(voiceOn && myId && myId<p.id)createPeer(p.id,true)}
+        r.position.lerp(new THREE.Vector3(p.x,p.y||0,p.z),.35);r.rotation.y=p.ry||0;
+      });
+      for(const [id,r] of remotePlayers)if(!seen.has(id)){
+        scene.remove(r);remotePlayers.delete(id);closePeer(id);
+      }
+    }
+  };
+  socket.onclose=()=>{mpStatus('🔴 Disconnected — retrying…');if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectToWorld,3000)};
+  socket.onerror=()=>mpStatus('⚠️ Multiplayer server unavailable');
+}
+function sendMultiplayer(){
+  if(!socket||socket.readyState!==1||!myId)return;
+  socket.send(JSON.stringify({type:'state',x:player.position.x,y:player.position.y,z:player.position.z,ry:player.rotation.y,vehicle:currentVehicle?currentVehicle.userData.type:null}));
+}
+const chatPanel=document.getElementById('chatPanel');
+const chatIcon=document.getElementById('chatIcon');
+const chatBadge=document.getElementById('chatBadge');
+chatIcon.addEventListener('click',()=>{
+  const open=chatPanel.classList.toggle('chat-open');
+  chatIcon.setAttribute('aria-label',open?'Close world chat':'Open world chat');
+  if(open){chatBadge.style.display='none';chatBadge.textContent='0';document.getElementById('chatInput').focus();}
+});
+
+function sendChat(){
+  const input=document.getElementById('chatInput'),msg=input.value.trim();
+  if(!msg)return;
+  if(socket&&socket.readyState===WebSocket.OPEN){
+    socket.send(JSON.stringify({type:'chat',message:msg}));
+  }else{
+    // Offline/local fallback: show only your own message. No bot replies.
+    addChat('You',msg,true);
+    mpStatus('🟡 Offline mode • Local chat');
+  }
+  input.value='';
+}
+document.getElementById('sendChat').onclick=sendChat;
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+connectToWorld();
+let mpTimer=0;
+
+function animate(){
+ requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);
+ if(running){
+  dayNight(dt);nextWeather-=dt;if(nextWeather<=0){setWeather();nextWeather=35+Math.random()*35}rain.visible=raining;
+  if(raining){const a=rain.geometry.attributes.position.array;for(let i=0;i<rainCount;i++){a[i*3+1]-=70*dt;if(a[i*3+1]<0)a[i*3+1]=120}rain.geometry.attributes.position.needsUpdate=true}
+  currentVehicle?driveVehicle(dt):walk(dt);
+  coins.forEach(c=>{c.rotation.z+=dt*3;if(c.visible&&player.position.distanceTo(c.position)<2){c.visible=false;score++;money+=25;rep+=1;toast('🪙 +₹25');updateUI()}});
+  npcs.forEach(n=>{n.position.x+=n.userData.vx*dt;n.position.z+=n.userData.vz*dt;if(Math.abs(n.position.x)>250||Math.abs(n.position.z)>280){n.userData.vx*=-1;n.userData.vz*=-1}});
+  animals.forEach(a=>{a.position.x+=Math.sin(performance.now()/900+a.position.z)*dt*2;a.position.z+=Math.cos(performance.now()/1100+a.position.x)*dt*1.2});
+  randomEvents();missions();
+  document.getElementById('area').textContent=areaName(player.position);
+  // Free-look third-person camera orbiting the player.
+  const distance=camMode===1?24:(camMode===2?7:12);
+  const horizontal=Math.cos(camPitch)*distance;
+  const target=new THREE.Vector3(
+    player.position.x + Math.sin(camYaw)*horizontal,
+    player.position.y + 2.5 + Math.sin(camPitch)*distance,
+    player.position.z + Math.cos(camYaw)*horizontal
+  );
+  camera.position.lerp(target,.12);
+  camera.lookAt(player.position.x,1.8,player.position.z);
+ }
+ renderer.render(scene,camera);
+}
+camera.position.set(0,8,85);animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+updateUI();
+</script>
+</body>
+</html>
